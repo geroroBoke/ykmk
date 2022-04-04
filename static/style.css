@@ -1,0 +1,43 @@
+table {
+  margin-top: 1em;
+  margin-left: auto;
+  margin-right: auto;
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 14px;
+  table-layout: fixed;
+  text-align: left;
+  padding: 0.4em;
+}
+thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+tr, th, td {
+  text-align: left;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+
+th {
+  font-weight: bold;
+}
+
+
+
+
+
+/* <span style="color:#268BD2">1000, 2000, 3000, </span>
+<span style="color:#D30102">4000, 5000, 6000, </span>
+<span style="color:#859900">7000, 8000, 9000, </span>
+<span style="color:#B58900">10,000, 11,000, 12,000, </span>
+<span style="color:#073642">NA</span> */

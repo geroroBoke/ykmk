@@ -1,0 +1,5 @@
+__pycache__/
+_old
+*.py[cod]
+*$py.class
+mp3/
