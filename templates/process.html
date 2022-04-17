@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="{{url_for('static', filename='bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{url_for('static', filename='style.css') }}" rel="stylesheet">
+    <link href="{{url_for('static', filename='favicon.ico') }}" rel="shortcut icon">
+    <link href="{{url_for('static', filename='loader.css') }}" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>gTTS processing</title>
+    <style>
+    #main{
+    }
+    .title{
+      font-size: x-small;
+      font-style: italic;
+    }
+    #div_queue{
+      font-size: x-small;
+      font-style: italic;
+    }
+    div{
+        margin: 10px;
+        padding: 10px;
+    }
+
+    #time_passed::before{
+        content:'(';
+    }
+    #time_passed::after{
+        content:'sec)';
+    }
+
+  </style>
+  <script src="{{url_for('static', filename='jquery-3.5.0.min.js') }}"></script>
+  </head>
+<body>
+<div style="text-align:center;">
+<center>
+{% if current_user.is_authenticated %}
+{% else %}
+{% endif %}
+
+<div id="top_menu"><a href="/">top page</a></div>
+
+<div id="div_status">
+    <span id="status_text">processing gTTS...</span>
+    <br>
+    <span id="time_passed">0</span>
+    <br>
+    <span class="title">{{filename}}</span>
+</div>
+
+<div id="loader" class="loader">
+    loading
+</div>
+
+<div id="div_again">
+    <a id="a_again" href="/process"></a>
+    <span id="time_left"></span>
+</div>
+
+<div id="div_queue" style="width:70%; text-align: left" >
+</div>
+
+</center>
+</body>
+<script>
+
+// jquery  ----------------------------
+$(function(){
+    // listをリフレッシュ
+    function reload_w_list(){
+        $.ajax({
+          url: "/w_list",
+          cache: false,
+          success: function(html){
+            $("#div_queue").html(html);
+          }
+        });
+    }
+
+    // dequeueを実行
+    function do_dequeue(){
+        $.ajax({
+          url: "/dequeue",
+          cache: false,
+          success: function(result){
+
+            // status
+            $("#status_text").text(result);
+
+            //
+            $("#loader").hide();
+
+            // listをリフレッシュ
+            $("#div_queue").html("");
+            reload_w_list();
+
+            // link表示
+            if (result.indexOf("!error!") == -1 ){
+                $("#a_again").text("gTTS from queue");
+                countdown_next_process();
+                flag_stop = true;
+            }
+          }
+        });
+    }
+
+    // countdown_next_process()
+    var tm_left = 60;
+    function countdown_next_process(){
+        tm_left--
+        $("#time_left").text('(' + tm_left + ')');
+        if (tm_left >= 0){
+            setTimeout(countdown_next_process, 1000);
+        }else{
+            window.location.href = '/process';
+        }
+    }
+
+
+    function get_current_time(){
+        var date = new Date();
+        return date.getTime();
+    }
+    var flag_stop = false;
+    var tm_start = get_current_time();
+    function count_encoding_time(){
+        var tm_passed = get_current_time() - tm_start;
+        var expression = Math.floor(tm_passed/100)/10;
+
+        $("#time_passed").text(expression.toFixed(1));
+        if (!flag_stop){
+            setTimeout(count_encoding_time, 300);
+        }
+    }
+
+    // listをリフレッシュ
+    reload_w_list();
+
+    // dequeueを実行
+    do_dequeue();
+
+    // count
+    count_encoding_time();
+
+});
+</script>
+
+</html>

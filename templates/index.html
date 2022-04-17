@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Yukkuri Maker</title>
     <style>
-    #main{
+    #div_queue{
     }
     #options{
       padding: 0.5rem;
@@ -25,8 +25,10 @@
       display: none;
     }
   </style>
+  <script src="{{url_for('static', filename='jquery-3.5.0.min.js') }}"></script>
   </head>
 <body>
+<div style="text-align:center;">
 <center>
 
 <ul class "nav navbar-nav navbar-right">
@@ -39,39 +41,95 @@
 </ul>
 
 <ul class "nav navbar-nav ">
-        <a href="{{ url_for('list') }}">list</a>
+    <a href="{{ url_for('gtt.list') }}">DL_list</a>
 </ul>
 
 
 <div id="topmenu">
   <div class="toggle"></div>
 </div>
-<div id="main">
-<br/>
-
-<div class="w-75 p-3">
-  <p id="main_plot" style="text-align:left; font-size:1.15rem;">
-    {{newtext|safe}}
-  </p>
-</div>
-</div>
-
 
 <form method="post" action="/gtts">
-    <textarea name="text" id="id_text" style="width:70%;" rows="3" placeholder="Copy and paste the text here."></textarea>
+    <textarea name="text" id="id_text" style="width:70%;" rows="4" placeholder="Copy and paste the text here."></textarea>
     <div>
-        <input class="btn btn-primary"  name="check" type="submit" value="generate mp3" />
+        <input class="btn btn-primary"  name="check" type="submit" value="gtts text" />
+        <span id="btn_enqueue" class="btn btn-primary">enqueue text</span>
     </div>
 </form>
+<br>
+<div> </div>
+<div> </div>
+<div> </div>
+<br>
+
+
+<span id ="btn_reload" class ="btn btn-primary">reload list</span>
+<span id ="btn_gtts_queue" class ="btn btn-primary">gtts from queue</span>
+
+<div id="div_queue" style="width:70%; text-align: left" >
+</div>
+<br>
 
 <div id="footer">
   <span>(2022)by geroro</span>
 </div>
-
 </center>
-
-
-
-
 </body>
+<script>
+
+// jquery  ----------------------------
+$(function(){
+
+    // textをenqueue
+    function enqueue_text(){
+        $.ajax({
+          type: "POST",
+          url: "/enqueue",
+          data: {text:$('#id_text').val()},
+          success: function(html){
+            $("#id_text").val("");
+            $("#div_queue").html(html);
+          }
+        });
+    }
+
+    // listをリフレッシュ
+    function reload_w_list(){
+        $.ajax({
+          url: "/w_list",
+          cache: false,
+          success: function(html){
+            $("#div_queue").html(html);
+          }
+        });
+    }
+
+    // gtts from queue
+    function gtts_queue(){
+        window.location.href = "/process";
+        // $.ajax({
+        //   url: "/dequeue",
+        //   cache: false,
+        //   success: function(html){
+        //     $("#main").html(html);
+        //   }
+        // });
+    }
+
+    // event
+    $('#btn_reload').on('click', function() {
+        reload_w_list();
+    });
+    $('#btn_enqueue').on('click', function() {
+        enqueue_text();
+    });
+    $('#btn_gtts_queue').on('click', function() {
+        gtts_queue();
+    });
+    // listをリフレッシュ
+    reload_w_list();
+
+});
+</script>
+
 </html>

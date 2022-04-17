@@ -18,40 +18,9 @@ def index():
     html = flask.render_template('index.html')
     return html
 
-# list page
-@app.route('/list')
-def list():
-    return gtt.get_mp3info_html()
-# #
-# @app.route('/', methods=['POST'])
-# def check():
-#     # get parameters from request
-#     text = request.form['text']
-#     lower = request.form.get('lower')
-#     hidetext = request.form.get('hidetext')
-
-#     if lower:
-#         text = text.lower()
-
-#     #do Wordlevelcheck
-#     scouter = WordLevelScouter(text)
-#     # scouter.retrieveResultMylevel()
-
-#     # stash lastdata
-#     global lastdata
-#     lastdata["scouter"] = scouter
-#     lastdata["text"] = text
-#     lastdata["hidetext"] = hidetext
-
-#     #render html
-#     html = render_template('index.html', \
-#         text=text, newtext = scouter.newtext,\
-#         table = scouter.table, \
-#         hidetext = hidetext,
-#         # ukus = ukus,
-#         lower = lower)
-
-#     return html
+@app.route("/mp3/<path:filename>")
+def play(filename):
+    return flask.send_from_directory("mp3", filename)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
