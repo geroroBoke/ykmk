@@ -9,6 +9,9 @@ from textinfo import get_text_info
 from id3 import set_id3_tag
 import db
 from mp3 import dir_mp3
+from pydub import AudioSegment
+
+
 
 # Blueprintオブジェクトを生成
 gtt_bp = flask.Blueprint('gtt', __name__)
@@ -134,7 +137,7 @@ def get_filename(text):
         return text.splitlines()[0][0:30] + ".mp3"
 
 # gTTSして保存してDBに登録する
-def gtts_saving_procedure(userid, text):
+def gtts_saving_procedure(userid, text, lowbitrate = False):
 
     # get text info
     info = get_text_info(text)
@@ -158,8 +161,8 @@ def gtts_saving_procedure(userid, text):
         content = text
 
     # エラー回避のおまじない
-    content = content.replace('\n', ',')
-    content = content.replace('\r', ',')
+    content = content.replace('\n', '。')
+    content = content.replace('\r', '。')
     content = content.replace('　', '') # 全角スペース
 
     # ハッシュ取得
@@ -178,6 +181,15 @@ def gtts_saving_procedure(userid, text):
     except Exception as e:
         print(e)
         return "!error! gtts file saving failed:"
+
+    # low bitrate
+    if lowbitrate:
+        try:
+            sound = AudioSegment.from_file(dir_mp3 + filename, "mp3")
+            sound.export(dir_mp3 + filename, format="mp3", bitrate="16k")
+        except Exception as e:
+            print(e)
+            return "!error! gtts file saving low bitrate failed:"
 
     # id3 tag edit
     if info:
@@ -320,10 +332,9 @@ def get_mp3info_html():
         html += """
         <li>
         <span style="font-size:smaller">
-        {0}
-        <a href="/mp3/{1}">[Play]</a>
-        <a href="download?filename={1}">[Download]</a>
-        <a href="delete?filename={1}" class="confirm" >[Delete]</a>
+        <a href="/mp3/{1}">{0}</a><br>
+        <a href="download?filename={1}">[DOWNLOAD]</a>
+        <a href="delete?filename={1}" class="confirm" >[×]</a>
         </span><br>
         </li>""".format(filename,url_filename)
     html += "</ol>"
