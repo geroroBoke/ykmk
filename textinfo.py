@@ -64,6 +64,7 @@ def get_text_info(text):
                 "number" : text[s_number:e_number],
                 "episode" : text[s_episode:e_episode],
                 "content" : text[s_content:e_content],
+                "text" : text,
                 }
     # ハーメルン
     elif "ホーム 利用規約 FAQ 運営情報 取扱説明書 プライバシーポリシー 情報提供 機能提案 自作フォント ログアウト 夜間モード：" in text:
@@ -128,6 +129,7 @@ def get_text_info(text):
                 "number" : text[s_number:e_number],
                 "episode" : text[s_episode:e_episode],
                 "content" : text[s_content:e_content],
+                "text" : text,
                 }
     else:
-        return
+        return {"text" : text}

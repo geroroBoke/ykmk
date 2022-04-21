@@ -23,4 +23,4 @@ def play(filename):
     return flask.send_from_directory("mp3", filename)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0", debug=True, ) #threaded=True)

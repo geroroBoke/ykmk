@@ -92,8 +92,11 @@ def gtts():
     # get text from form
     text = flask.request.form['text']
 
+    # get text info
+    info = get_text_info(text)
+
     # get filename
-    filename = get_filename(text)
+    filename = get_filename(info)
 
     # ID取得
     try:
@@ -110,12 +113,28 @@ def gtts():
     html += "<a href='/'>top page</a>"
     return html
 
-# textからfilename取得
-def get_filename(text):
+# infoからcontent取得
+def get_content(info):
 
-    # text分析をかける
-    info = get_text_info(text)
-    if info:
+    if "title" in info:
+        content = ""
+        content += info['episode'] + ", "
+        content += info['chapter'] + ", "
+        # content += info['title'] + ", "
+        content += "。"
+        content += info['content'] + ". "
+        # content = info['chapter'] + ", "+ info['episode'] + ", " + info['content']
+    else:
+        content = info["text"]
+
+    return content
+
+# infoからfilename取得
+def get_filename(info):
+
+    # infoが正常に取得
+    if "title" in info:
+
         # numberを書き換える "1/100" >> "001/100"
         pos = info['number'].find("/")
         if pos:
@@ -132,9 +151,15 @@ def get_filename(text):
             "", # info['chapter'],
             info['episode'])
         filename = filename.replace('/', '-')
+
         return filename + ".mp3"
+
+    # infoが取得できていない
     else:
-        return text.splitlines()[0][0:30] + ".mp3"
+        # 失敗してもinfoにはtextは格納されている
+        print(info["text"])
+        print(info["text"].splitlines())
+        return info["text"].splitlines()[0][0:30] + ".mp3"
 
 # gTTSして保存してDBに登録する
 def gtts_saving_procedure(userid, text, lowbitrate = False):
@@ -143,26 +168,16 @@ def gtts_saving_procedure(userid, text, lowbitrate = False):
     info = get_text_info(text)
 
     # get_filename
-    filename = get_filename(text)
+    filename = get_filename(info)
 
-    #
+    # print start message
     print("gtts_saving_procedure:" + filename)
 
     # get content
-    if info:
-        content = ""
-        content += info['episode'] + ", "
-        content += info['chapter'] + ", "
-        # content += info['title'] + ", "
-        content += "。"
-        content += info['content'] + ". "
-        # content = info['chapter'] + ", "+ info['episode'] + ", " + info['content']
-    else:
-        content = text
+    content = get_content(info)
 
     # エラー回避のおまじない
     content = content.replace('\n', '。')
-    content = content.replace('\r', '。')
     content = content.replace('　', '') # 全角スペース
 
     # ハッシュ取得
@@ -192,7 +207,7 @@ def gtts_saving_procedure(userid, text, lowbitrate = False):
             return "!error! gtts file saving low bitrate failed:"
 
     # id3 tag edit
-    if info:
+    if 'title' in info:
         set_id3_tag(
             dir_mp3 + filename,
             title=info['episode'],
@@ -204,7 +219,7 @@ def gtts_saving_procedure(userid, text, lowbitrate = False):
     size = os.path.getsize(dir_mp3 + filename)
 
     # register in db
-    db.put_mp3info(userid, filename, hash, size)
+    db.put_mp3info(userid, filename, hash, size, info)
 
     return "successfully generated mp3:"
 
@@ -321,22 +336,47 @@ def get_mp3info_html():
     lists = db.get_mp3info_lists()
 
     # htmlを作成する
-    html = "<ol>"
+    html = "<ul>"
     # for i, l in enumerate(sorted(lists, key = lambda r: r[1])):
+    # CREATE TABLE file (user text, filename text, hash text, size integer, title text, chapter text, episode text, number text);
+    # <audio src="{1}" preload="metadata" controls></audio>
+
+    html += "<li>MP3 FILES<ol>"
+
+    last_title = ""
+
     for l in sorted(lists, key = lambda r: r[1]):
 
-        # ファイルごとにli項目を作成
         filename = l[1]
+        title = l[4]
+        episode = l[6]
+        number = l[7]
+
         url_filename = urllib.parse.quote(filename)
-        # <audio src="{1}" preload="metadata" controls></audio>
+
+        # 一つ前と違うタイトルならタイトル項目を入れる
+        if last_title != title:
+            html += "</ol></span></li>"
+            html += """
+            <li>
+            <span style="font-size:smaller">
+            {0}
+            <ol>""".format(title)
+
+        # ファイルごとにli項目を作成
         html += """
         <li>
-        <span style="font-size:smaller">
-        <a href="/mp3/{1}">{0}</a><br>
-        <a href="download?filename={1}">[DOWNLOAD]</a>
+        <span style="font-size:x-small;">
+        ({2})
+        </span>
+        <span style="font-size:smaller;">
+        <a href="/mp3/{1}">{0}</a>
+        <a href="download?filename={1}">[DL]</a>
         <a href="delete?filename={1}" class="confirm" >[×]</a>
-        </span><br>
-        </li>""".format(filename,url_filename)
-    html += "</ol>"
+        </span>
+        </li>""".format(episode, url_filename, number)
+        last_title = title
+    html += "</ol></li>"
+    html += "</ul>"
     return html
 

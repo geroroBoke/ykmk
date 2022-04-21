@@ -1,16 +1,29 @@
 import sqlite3
 from mp3 import dir_mp3
 import os
+import re
 
 path_db = r'mysite/db/main.db'
-# CREATE TABLE file (user text, filename text, hash text, size integer);
+# CREATE TABLE file (user text, filename text, hash text, size integer, title text, chapter text, episode text, number text);
 # CREATE TABLE queue (user text, filename text, text text, flag text);
 
 # mp3ファイルの情報をdatabaseに登録する
-def put_mp3info(user, filename, hash, size):
+def put_mp3info(user, filename, hash, size, info):
 
     con = sqlite3.connect(path_db)
     cur = con.cursor()
+
+    # titleなど取得
+    if 'title' in info:
+        title = info['title']
+        chapter = info['chapter']
+        episode = info['episode']
+        number = info['number']
+    else:
+        title = "ETC"
+        chapter = ""
+        episode = filename
+        number = ""
 
     # 同一ファイルがあるか確認する
     flagAlready = False;
@@ -20,11 +33,11 @@ def put_mp3info(user, filename, hash, size):
 
     # 同一ファイル名があればアップデートする
     if flagAlready:
-        cur.execute("UPDATE file SET user = ?, hash = ?, size = ? where filename = ?",(user, hash, size, filename))
+        cur.execute("UPDATE file SET user = ?, hash = ?, size = ?, title = ?, chapter = ?, episode = ?, number = ? where filename = ?",(user, hash, size, title, chapter, episode, number, filename))
 
     # 無ければインサートする
     else:
-        cur.execute("INSERT INTO file (user, filename, hash, size) VALUES (?, ?, ?, ?)",(user, filename, hash, size))
+        cur.execute("INSERT INTO file (user, filename, hash, size, title, chapter, episode, number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",(user, filename, hash, size, title, chapter, episode, number))
 
     con.commit()
     con.close()
@@ -57,6 +70,9 @@ def del_mp3info(filename):
 
 # mp3ファイルの情報をdatabaseから取得する
 def get_mp3info_lists():
+
+    # TODO delete this line
+    # set_mp3info_title()
 
     # # ファイルの存在とDBの整合性を保つ
     keep_mp3info_consistency()
@@ -93,6 +109,53 @@ def keep_mp3info_consistency():
             del_mp3info(filename)
             print("keep_mp3info_consistency: drop records of " + filename)
 
+# mp3ファイルの情報にファイル名からタイトルなどを設定する
+def set_mp3info_title():
+
+    con = sqlite3.connect(path_db)
+    cur = con.cursor()
+
+    # 全リスト取得
+    try:
+        cur.execute("SELECT * FROM file")
+    except sqlite3.Error as e:
+        print(e)
+        return
+    lists = cur.fetchall()
+
+    for l in lists:
+        # filename
+        filename = l[1]
+        findtext = filename
+
+        # title
+        title = ""
+        m = re.search("(?<=『).+?(?=』)", findtext)
+        if m:
+            title = m.group()
+            findtext = findtext[m.end() + len("』"):]
+
+        # number
+        number = ""
+        m = re.search("(?<=\().+?(?=\))", findtext)
+        if m:
+            number = m.group()
+            findtext = findtext[m.end() + len(")"):]
+
+        # episode
+        episode = ""
+        m = re.search("(?<=-).+?(?=.mp)", findtext)
+        if m:
+            episode = m.group()
+
+        # dbにtitle, episode, episodeを登録する
+        try:
+            cur.execute("UPDATE file SET title = ?, number = ?, episode = ? where filename = ?" ,(title, number, episode, filename, ))
+        except sqlite3.Error as e:
+        	print(e)
+
+    con.commit()
+    con.close()
 
 # 変換待ちのテキストキューに追加する
 def put_textqueue(user, filename, text):
